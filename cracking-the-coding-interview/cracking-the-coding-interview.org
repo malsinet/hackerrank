@@ -1,0 +1,279 @@
+
+#+TITLE: Hacker Rank: Cracking the Coding Interview
+#+AUTHOR: Martín Alsinet
+#+DATE: 2017
+#+OPTIONS: toc:nil ':t num:nil
+#+LANGUAGE: en
+#+LaTeX_HEADER: \usemintedstyle{default}
+#+LaTeX_HEADER: \usepackage{xcolor}
+#+LaTeX_HEADER: \definecolor{bg}{rgb}{0.95,0.95,0.95}
+
+* Introduction
+
+I am using the challenges from /HackerRank: Cracking the Coding Interview/ to practice some fundamental computer science concepts using different programming languages.
+
+Initially I will use Javascript and Python, writing solutions for each challenge in both languages. I will try to add some other programming languages later.
+
+* Setup
+** Javascript Setup
+*** Package.json
+
+#+BEGIN_SRC js :tangle package.json
+{
+  "name": "hackerrank-coding-interview",
+  "version": "0.1.0",
+  "description": "Hacker Rank: Cracking the Coding Interview",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm start"
+  },
+  "author": "Martín Alsinet",
+  "license": "CC",
+}
+#+END_SRC
+
+*** Install dependencies
+
+We are going to use the following dependencies:
+
+- lazy :: Lazy lists for node
+
+#+BEGIN_SRC sh :results output drawer
+npm install lazy
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
++ lazy@1.0.11
+added 1 package in 1.692s
+:END:
+
+** Python Setup
+* Test Cases
+
+For each challenge, Hacker Rank has elaborated a set of test cases that must be run successfully in order to verify that the solution for the challenge is correct. All test cases consist in a set of input data and its expected output when processed by a correct solution. These are simple .txt files which I have downloaded into the =./testcases/= folder. Their filename format is =inputXX.txt= and =outputXX.txt=, where the =XX= is the test case number.
+
+We need a test case runner that can read each input file, run the test case using my proposed solution, and compare the output of the execution of that test case to the corresponding output file. If both outputs are equal, the function passes the test case. It would also be nice to be able to measure the time taken for each test case run and its resource usage.
+
+** Javascript test case runner
+
+The following source code block will be referenced from all Javascript solutions in order to run the suite of test cases corresponding to that challenge. It creates an object called =tc= with the following methods:
+
+- list :: List the available test cases in a folder with their input and output files
+- run :: Execute a specific test case providing a solution function
+- suite :: Execute the complete test case suite
+- results :: Return a summary array with the results of a test suite run
+
+#+NAME: js-testcase
+#+BEGIN_SRC js
+var fs = require('fs');
+var path = require('path');
+
+var tc = {
+    list: function(folder){
+        var files = fs.readdirSync(folder);
+        var inputs = files.filter(filename => filename.startsWith("input"));
+        var outputs = files.filter(filename => filename.startsWith("output"));
+        var testcases = inputs.map(function (item, i) { 
+            return {
+                input: path.join(folder, item), 
+                output: path.join(folder, outputs[i])
+            } 
+        });
+        return testcases;
+    },
+    run: function(testcase, runFn){
+        var input = fs.readFileSync(testcase.input, "utf8");
+        var begin = Date.now();
+        var result = runFn(input.split("\n"));
+        var end = Date.now();
+        var expected = fs.readFileSync(testcase.output, "utf8");
+        return {
+             success: (expected === result),
+             runtime: (end-begin + " msec"),
+              result: result,
+            expected: expected
+        }
+    },
+    suite: function(testcases, fn){
+        var that = this;
+        return testcases.map(
+            function(testcase, i) {
+                var tc = that.run(testcase, fn);
+                return {
+                    testcase: i+1,
+                     success: tc.success,
+                     runtime: tc.runtime
+                };
+            });
+    },
+    results: function(tests){
+        var titles = ["Test case", "Success", "Runtime"];
+        var results = tests.map(
+            test => [test.testcase, test.success, test.runtime]
+        );
+        results.unshift(titles);
+        return results;
+    }
+}
+#+END_SRC
+
+** Python test case runner
+* Data Structures
+** Arrays: Left Rotation
+*** Problem Definition
+
+A left rotation operation on an array of size /*n*/ shifts each of the array's elements 1 unit to the left. For example, if 2 left rotations are performed on array [1, 2, 3, 4, 5], then the array would become [3, 4, 5, 1, 2].
+
+Given an array of /*n*/ integers and a number, /*d*/, perform /*d*/ left rotations on the array. Then print the updated array as a single line of space-separated integers.
+
+*** Input Format
+
+The first line contains two space-separated integers denoting the respective values of /*n*/ (the number of integers) and /*d*/ (the number of left rotations you must perform). The second line contains /*n*/ space-separated integers describing the respective elements of the array's initial state.
+
+*** Constraints
+
+- 1 \le /*n*/ \le 10^5
+- 1 \le /*d*/ \le /*n*/
+- 1 \le /*a_i*/ \le 10^6
+
+*** Output Format
+
+Print a single line of /*n*/ space-separated integers denoting the final state of the array after performing /*d*/ left rotations.
+
+**** Sample Input
+
+#+BEGIN_SRC sh :eval never
+5 4
+1 2 3 4 5
+#+END_SRC
+
+**** Sample Output
+
+#+BEGIN_SRC sh :eval never
+5 1 2 3 4
+#+END_SRC
+
+*** Explanation
+
+When we perform ~d = 4~ left rotations, the array undergoes the following sequence of changes:
+
+#+BEGIN_QUOTE
+[1, 2, 3, 4, 5] \rarr [2, 3, 4, 5, 1] \rarr [3, 4, 5, 1, 2] \rarr [4, 5, 1, 2, 3] \rarr [5, 1, 2, 3, 4]
+#+END_QUOTE
+
+Thus, we print the array's final state as a single line of space-separated values, which is =5 1 2 3 4=.
+
+*** Solutions
+**** Javascript
+
+*Naive solution*
+
+My first approach to the solution uses a temporary array (=ret=) to store the array to be returned. Since I have to perform *k* left rotations, that means that the first element of the result array will be in the *k* position in the source array. So, we start in the *k* position and push all remaining elements into the result array (from index *k* until *n-1*). Then, we append the elements starting from the beginning of the source array until reaching the *k-1* position so that we have all elements in the result array (from index *0* until *k-1*).
+
+#+NAME: Naive solution
+#+BEGIN_SRC js  :noweb yes
+<<js-testcase>>
+
+function challenge_solution(lines) {
+    var n_temp = lines[0].split(' ');
+    var n = parseInt(n_temp[0]);
+    var k = parseInt(n_temp[1]);
+    var a = lines[1].split(" ");;
+    return left_rotate(n, k, a).join(" ");
+}
+function left_rotate(n, k, a) {
+    ret = [];
+    for (var i=k; i<n; i++) {
+        ret.push(a[i]);
+    }
+    for (var j=0; j<k; j++) {
+        ret.push(a[j]);
+    }
+    return ret;
+}
+
+var folder = "./testcases/arrays-left-rotation";
+return tc.results(
+    tc.suite(
+        tc.list(folder), challenge_solution
+    )
+);
+
+#+END_SRC
+
+#+RESULTS: Naive solution
+| Test case | Success | Runtime |
+|         1 | true    | 0 msec  |
+|         2 | true    | 0 msec  |
+|         3 | true    | 0 msec  |
+|         4 | true    | 0 msec  |
+|         5 | true    | 0 msec  |
+|         6 | true    | 2 msec  |
+|         7 | true    | 4 msec  |
+|         8 | true    | 2 msec  |
+|         9 | true    | 15 msec |
+|        10 | true    | 22 msec |
+
+*Compact Solution*
+
+Actually, I implemented this solution /after/ figuring out the Python solution. When working in Python there is a pythonic and an unpythonic way to solve a problem. Python programmers generally favor list comprehension operations over looping through arrays, so the use of for loops is discouraged. Javascript also has quite powerful array functions, so the compact solution is also a one-liner, but comparing the two versions it is clear that the result is not as easy to read as its Python alternative.
+
+#+NAME: Compact solution
+#+BEGIN_SRC js :result raw :noweb yes
+<<js-testcase>> 
+
+function challenge_solution(lines) {
+    var n_temp = lines[0].split(' ');
+    var n = parseInt(n_temp[0]);
+    var k = parseInt(n_temp[1]);
+    var a = lines[1].split(" ");;
+    return left_rotate(n, k, a).join(" ");
+}
+function left_rotate(n, k, a) {
+    return a.slice(k).concat(a.slice(0,k));
+}
+
+var folder = "./testcases/arrays-left-rotation";
+
+return tc.results(
+    tc.suite(
+        tc.list(folder), challenge_solution
+    )
+);
+#+END_SRC
+
+#+RESULTS: Compact solution
+| Test case | Success | Runtime |
+|         1 | true    | 1 msec  |
+|         2 | true    | 0 msec  |
+|         3 | true    | 0 msec  |
+|         4 | true    | 0 msec  |
+|         5 | true    | 0 msec  |
+|         6 | true    | 1 msec  |
+|         7 | true    | 2 msec  |
+|         8 | true    | 1 msec  |
+|         9 | true    | 13 msec |
+|        10 | true    | 20 msec |
+
+**** Python
+
+Python list comprehension operators are extremely powerful, so this solution is just a one-liner. The underlying approach is the same, merging two sublists from the original array, the first from the /*k*/ element until the last (/*n-1*/) element, and the second from the first element until the /*(k-1)*/ element. Notice how cleanly the code follows the algorithm.
+
+#+BEGIN_SRC python
+
+def left_rotate(n, k, a):
+    return a[k:n] + a[0:k]
+
+a = [1, 2, 3, 4, 5]
+n = 5
+k = 4
+
+return left_rotate(n, k, a)
+#+END_SRC
+
+#+RESULTS:
+| 5 | 1 | 2 | 3 | 4 |
+
+
+

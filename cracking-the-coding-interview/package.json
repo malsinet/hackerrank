@@ -1,0 +1,11 @@
+{
+  "name": "hackerrank-coding-interview",
+  "version": "0.1.0",
+  "description": "Hacker Rank: Cracking the Coding Interview",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm start"
+  },
+  "author": "Martín Alsinet",
+  "license": "CC",
+}
