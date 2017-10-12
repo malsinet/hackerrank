@@ -32,28 +32,16 @@ Initially I will use Javascript and Python, writing solutions for each challenge
 }
 #+END_SRC
 
-*** Install dependencies
-
-We are going to use the following dependencies:
-
-- lazy :: Lazy lists for node
-
-#+BEGIN_SRC sh :results output drawer
-npm install lazy
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-+ lazy@1.0.11
-added 1 package in 1.692s
-:END:
-
 ** Python Setup
 * Test Cases
 
-For each challenge, Hacker Rank has elaborated a set of test cases that must be run successfully in order to verify that the solution for the challenge is correct. All test cases consist in a set of input data and its expected output when processed by a correct solution. These are simple .txt files which I have downloaded into the =./testcases/= folder. Their filename format is =inputXX.txt= and =outputXX.txt=, where the =XX= is the test case number.
+Each challenge comes with a set of test cases that must be successfully run in order to verify that the proposed solution for the challenge is correct. These test cases consist in a set of files with input data and its expected output when processed by a correct solution. They are simple .txt files which I have downloaded into the =./testcases/= folder. Their filename format is =inputXX.txt= and =outputXX.txt=, where the =XX= is the test case number.
 
 We need a test case runner that can read each input file, run the test case using my proposed solution, and compare the output of the execution of that test case to the corresponding output file. If both outputs are equal, the function passes the test case. It would also be nice to be able to measure the time taken for each test case run and its resource usage.
+
+*** TODO Modify to tar.gzip test cases
+
+The test cases for just the first exercise require 2.5 MB. There are 20 challenges in total, so the entire set of test cases for all challenges will require at least 50 MB. It could be useful to compress all those text files and decompress them on demand when we are running a test case.
 
 ** Javascript test case runner
 
@@ -90,7 +78,7 @@ var tc = {
         var expected = fs.readFileSync(testcase.output, "utf8");
         return {
              success: (expected === result),
-             runtime: (end-begin + " msec"),
+             runtime: (end-begin) + " msec",
               result: result,
             expected: expected
         }
@@ -110,7 +98,9 @@ var tc = {
     results: function(tests){
         var titles = ["Test case", "Success", "Runtime"];
         var results = tests.map(
-            test => [test.testcase, test.success, test.runtime]
+            function(test){
+                return [test.testcase, test.success, test.runtime]
+            }
         );
         results.unshift(titles);
         return results;
@@ -119,6 +109,73 @@ var tc = {
 #+END_SRC
 
 ** Python test case runner
+
+In this case, I am going to replicate much of the logic I already did in Javascript for the Python version of the test case runner.
+
+#+NAME: py-testcase
+#+BEGIN_SRC python
+
+import os
+from timeit import default_timer as timer
+from math import ceil
+
+def merge(d1, d2):
+    ''' Merge two dictionaries. '''
+    merged = {}
+    merged.update(d1)
+    merged.update(d2)
+    return merged
+
+def filenames(prefix, folder):
+    return [{prefix: os.path.join(folder, file)} 
+        for file in os.listdir(folder) 
+            if file.startswith(prefix)]
+
+def elapsed_str(end, start):
+    return str(int(round((end-start)*1000)))+" msec"
+
+class TestCase:
+    def __init__(self, folder):
+        self.folder = folder
+
+    def list(self):
+        inputs  = filenames("input", self.folder)
+        outputs = filenames("output", self.folder)
+        return [merge(i,o) for i,o in list(zip(inputs, outputs))]
+
+    def run(self, testcase, fn):
+        with open(testcase["input"]) as inf, open(testcase["output"]) as outf:
+            input_text = inf.read()
+            start = timer()
+            result = " ".join(str(x) for x in fn(input_text.split("\n")))
+            end = timer()
+            expected_text = outf.read()
+            return {
+                "success": (result == expected_text),
+                "runtime": elapsed_str(end, start),
+                "result": result,
+                "expected": expected_text
+            }
+
+    def suite(self, testcases, fn):
+        return [self.fields(self.run(test, fn)) for test in testcases]
+
+    def results(self, tests):
+        titles = [["Test case", "Success", "Runtime"]]
+        results = [[i+1, t["success"], t["runtime"]] for i, t in enumerate(tests)]
+        return titles + results
+
+    def fields(self, item):
+        return {
+            "success": item["success"],
+            "runtime": item["runtime"]
+        }
+
+#+END_SRC
+
+#+RESULTS: py-testcase
+: None
+
 * Data Structures
 ** Arrays: Left Rotation
 *** Problem Definition
@@ -203,17 +260,6 @@ return tc.results(
 #+END_SRC
 
 #+RESULTS: Naive solution
-| Test case | Success | Runtime |
-|         1 | true    | 0 msec  |
-|         2 | true    | 0 msec  |
-|         3 | true    | 0 msec  |
-|         4 | true    | 0 msec  |
-|         5 | true    | 0 msec  |
-|         6 | true    | 2 msec  |
-|         7 | true    | 4 msec  |
-|         8 | true    | 2 msec  |
-|         9 | true    | 15 msec |
-|        10 | true    | 22 msec |
 
 *Compact Solution*
 
@@ -245,35 +291,102 @@ return tc.results(
 
 #+RESULTS: Compact solution
 | Test case | Success | Runtime |
-|         1 | true    | 1 msec  |
+|         1 | true    | 0 msec  |
 |         2 | true    | 0 msec  |
 |         3 | true    | 0 msec  |
 |         4 | true    | 0 msec  |
 |         5 | true    | 0 msec  |
 |         6 | true    | 1 msec  |
-|         7 | true    | 2 msec  |
-|         8 | true    | 1 msec  |
+|         7 | true    | 1 msec  |
+|         8 | true    | 2 msec  |
 |         9 | true    | 13 msec |
-|        10 | true    | 20 msec |
+|        10 | true    | 22 msec |
 
 **** Python
 
 Python list comprehension operators are extremely powerful, so this solution is just a one-liner. The underlying approach is the same, merging two sublists from the original array, the first from the /*k*/ element until the last (/*n-1*/) element, and the second from the first element until the /*(k-1)*/ element. Notice how cleanly the code follows the algorithm.
 
-#+BEGIN_SRC python
+#+BEGIN_SRC python :noweb yes
+<<py-testcase>>
+
+tc = TestCase("./testcases/arrays-left-rotation");
 
 def left_rotate(n, k, a):
     return a[k:n] + a[0:k]
 
-a = [1, 2, 3, 4, 5]
-n = 5
-k = 4
+def challenge_solution(lines):
+    n, k = [int(x) for x in lines[0].split(" ")]
+    a = [int(x) for x in lines[1].split(" ")]
+    return left_rotate(n, k, a)
 
-return left_rotate(n, k, a)
+return tc.results(tc.suite(tc.list(), challenge_solution))
 #+END_SRC
 
 #+RESULTS:
-| 5 | 1 | 2 | 3 | 4 |
+| Test case | Success | Runtime |
+|         1 | True    | 0 msec  |
+|         2 | True    | 0 msec  |
+|         3 | True    | 0 msec  |
+|         4 | True    | 0 msec  |
+|         5 | True    | 0 msec  |
+|         6 | True    | 6 msec  |
+|         7 | True    | 7 msec  |
+|         8 | True    | 1 msec  |
+|         9 | True    | 58 msec |
+|        10 | True    | 68 msec |
 
+** Stacks: Balanced Brackets
+*** Problem Definition
 
+A bracket is considered to be any one of the following characters: =(=, =)=, ={=, =}=, =[=, or =]=.
 
+Two brackets are considered to be a matched pair if the an opening bracket (i.e., =(=, =[=, or ={=) occurs to the left of a closing bracket (i.e., =)=, =]=, or =}=) of the exact same type. There are three types of matched pairs of brackets: =[]=, ={}=, and =()=.
+
+A matching pair of brackets is not balanced if the set of brackets it encloses are not matched. For example, ={[(])}= is not balanced because the contents in between ={= and =}= are not balanced. The pair of square brackets encloses a single, unbalanced opening bracket, =(=, and the pair of parentheses encloses a single, unbalanced closing square bracket, =]=.
+
+By this logic, we say a sequence of brackets is considered to be balanced if the following conditions are met:
+
+- It contains no unmatched brackets.
+- The subset of brackets enclosed within the confines of a matched pair of brackets is also a matched pair of brackets.
+
+Given /*n*/  strings of brackets, determine whether each sequence of brackets is balanced. If a string is balanced, print =YES= on a new line; otherwise, print =NO= on a new line.
+
+*** Input Format
+
+The first line contains a single integer, /*n*/, denoting the number of strings. 
+Each line /*i*/ of the /*n*/ subsequent lines consists of a single string, /*s*/, denoting a sequence of brackets.
+
+*** Constraints
+
+- 1 \le /*n*/ \le 10^3
+- 1 \le /*length(s)*/ \le 10^3, where  is the length of the sequence.
+- Each character in the sequence will be a bracket (i.e., ={=, =}=, =(=, =)=, =[=, and =]=).
+
+*** Output Format
+
+For each string, print whether or not the string of brackets is balanced on a new line. If the brackets are balanced, print =YES=; otherwise, print =NO=.
+
+**** Sample Input
+
+#+BEGIN_SRC sh :eval never
+3
+{[()]}
+{[(])}
+{{[[(())]]}}
+#+END_SRC
+
+**** Sample Output
+
+#+BEGIN_SRC sh :eval never
+YES
+NO
+YES
+#+END_SRC
+
+*** Explanation
+
+The string ={[()]}= meets both criteria for being a balanced string, so we print =YES= on a new line.
+The string ={[(])}= is not balanced, because the brackets enclosed by the matched pairs =[(]= and =(])= are not balanced. Thus, we print =NO= on a new line.
+The string ={{[[(())]]}}= meets both criteria for being a balanced string, so we print =YES= on a new line.
+
+*** Solutions
