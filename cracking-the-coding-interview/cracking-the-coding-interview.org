@@ -52,6 +52,8 @@ The following source code block will be referenced from all Javascript solutions
 - suite :: Execute the complete test case suite
 - results :: Return a summary array with the results of a test suite run
 
+** Testcase Module
+
 #+BEGIN_SRC js :tangle testcase.js
 var fs = require('fs');
 var path = require('path');
@@ -113,11 +115,14 @@ module.exports = tc
 
 In this case, I am going to replicate much of the logic I already did in Javascript for the Python version of the test case runner.
 
+*** Testcase Module
+
 #+BEGIN_SRC python :tangle testcase.py
 
 import os
 from timeit import default_timer as timer
 from math import ceil
+
 
 def merge(d1, d2):
     ''' Merge two dictionaries. '''
@@ -126,22 +131,27 @@ def merge(d1, d2):
     merged.update(d2)
     return merged
 
+
 def filenames(prefix, folder):
-    return [{prefix: os.path.join(folder, file)} 
-        for file in os.listdir(folder) 
-            if file.startswith(prefix)]
+    return [
+        {prefix: os.path.join(folder, file)}
+        for file in os.listdir(folder)
+        if file.startswith(prefix)
+    ]
+
 
 def elapsed_str(end, start):
-    return str(int(round((end-start)*1000)))+" msec"
+    return str(int(round((end-start)*1000))) + " msec"
+
 
 class TestCase:
     def __init__(self, folder):
         self.folder = folder
 
     def list(self):
-        inputs  = filenames("input", self.folder)
+        inputs = filenames("input", self.folder)
         outputs = filenames("output", self.folder)
-        return [merge(i,o) for i,o in list(zip(inputs, outputs))]
+        return [merge(i, o) for i, o in list(zip(inputs, outputs))]
 
     def run(self, testcase, fn):
         with open(testcase["input"]) as inf, open(testcase["output"]) as outf:
@@ -162,7 +172,10 @@ class TestCase:
 
     def results(self, tests):
         titles = [["Test case", "Success", "Runtime"]]
-        results = [["#%s" % i, t["success"], t["runtime"]] for i, t in enumerate(tests)]
+        results = [
+            ["#%s" % i, t["success"], t["runtime"]]
+            for i, t in enumerate(tests)
+        ]
         return titles + results
 
     def fields(self, item):
@@ -220,21 +233,12 @@ Thus, we print the array's final state as a single line of space-separated value
 
 *** Javascript Solutions
 
-*Naive solution*
-
 My first approach to the solution uses a temporary array (=ret=) to store the array to be returned. Since I have to perform *k* left rotations, that means that the first element of the result array will be in the *k* position in the source array. So, we start in the *k* position and push all remaining elements into the result array (from index *k* until *n-1*). Then, we append the elements starting from the beginning of the source array until reaching the *k-1* position so that we have all elements in the result array (from index *0* until *k-1*).
+
+**** Naive solution
 
 #+NAME: Naive solution
 #+BEGIN_SRC js :exports both
-var tc = require("/app/testcase.js");
-
-function challenge_solution(lines) {
-    var n_temp = lines[0].split(' ');
-    var n = parseInt(n_temp[0]);
-    var k = parseInt(n_temp[1]);
-    var a = lines[1].split(" ");;
-    return left_rotate(n, k, a).join(" ");
-}
 function left_rotate(n, k, a) {
     ret = [];
     for (var i=k; i<n; i++) {
@@ -246,7 +250,19 @@ function left_rotate(n, k, a) {
     return ret;
 }
 
+
+function challenge_solution(lines) {
+    var n_temp = lines[0].split(' ');
+    var n = parseInt(n_temp[0]);
+    var k = parseInt(n_temp[1]);
+    var a = lines[1].split(" ");;
+    return left_rotate(n, k, a).join(" ");
+}
+
+
+// Run all testcases
 var folder = "./testcases/arrays-left-rotation";
+var tc = require("/app/testcase.js");
 return tc.results(
     tc.suite(
         tc.list(folder), challenge_solution
@@ -267,13 +283,16 @@ return tc.results(
 | #8        | true    | 14 msec |
 | #9        | true    | 23 msec |
 
-*Compact Solution*
-
 Actually, I implemented this solution /after/ figuring out the Python solution. When working in Python there is a pythonic and an unpythonic way to write code. Python programmers generally favor list comprehension operations over looping through arrays, so the use of for loops is discouraged. Javascript also has quite powerful array functions, so the compact solution is also a one-liner, but comparing the two versions it is clear that the Python version is easier to read and to understand.
+
+**** Compact Solution*
 
 #+NAME: Compact Solution
 #+BEGIN_SRC js :exports both
-var tc = require("/app/testcase.js");
+function left_rotate(n, k, a) {
+    return a.slice(k).concat(a.slice(0,k));
+}
+
 
 function challenge_solution(lines) {
     var n_temp = lines[0].split(' ');
@@ -282,12 +301,11 @@ function challenge_solution(lines) {
     var a = lines[1].split(" ");;
     return left_rotate(n, k, a).join(" ");
 }
-function left_rotate(n, k, a) {
-    return a.slice(k).concat(a.slice(0,k));
-}
 
+
+//Run all testcases
 var folder = "./testcases/arrays-left-rotation";
-
+var tc = require("/app/testcase.js");
 return tc.results(
     tc.suite(
         tc.list(folder), challenge_solution
@@ -304,9 +322,9 @@ return tc.results(
 | #4        | true    | 0 msec  |
 | #5        | true    | 2 msec  |
 | #6        | true    | 1 msec  |
-| #7        | true    | 2 msec  |
+| #7        | true    | 1 msec  |
 | #8        | true    | 13 msec |
-| #9        | true    | 20 msec |
+| #9        | true    | 21 msec |
 
 *** Python Solution
 
@@ -315,16 +333,19 @@ Python list comprehension operators are extremely powerful, so this solution is 
 #+BEGIN_SRC python :exports both
 from testcase import TestCase
 
-tc = TestCase("./testcases/arrays-left-rotation");
 
 def left_rotate(n, k, a):
     return a[k:n] + a[0:k]
+
 
 def challenge_solution(lines):
     n, k = [int(x) for x in lines[0].split(" ")]
     a = [int(x) for x in lines[1].split(" ")]
     return left_rotate(n, k, a)
 
+
+# Run all testcases
+tc = TestCase("./testcases/arrays-left-rotation");
 return tc.results(tc.suite(tc.list(), challenge_solution))
 #+END_SRC
 
@@ -395,4 +416,77 @@ The string ={[()]}= meets both criteria for being a balanced string, so we print
 The string ={[(])}= is not balanced, because the brackets enclosed by the matched pairs =[(]= and =(])= are not balanced. Thus, we print =NO= on a new line.
 The string ={{[[(())]]}}= meets both criteria for being a balanced string, so we print =YES= on a new line.
 
-*** Solutions
+*** Javascript Solution
+
+In this case I am using two hashes (=open= and =close=) to build a table of the corresponding opening and closing characters. Then I enter a for loop to process the /t/ lines one at a time of the input expression array. For each expression, I enter on an inner loop to check each character and, if it is an opening character (it exists in the =open= hash), I push it into a =stack= array. If the character is a closing character I compare it to element on the top the stack. If the closing character does not match the element in the top of the stack, then the brackets are not balanced, and I break out of the inner loop in order to go on to the next expression. After the inner loop, but before starting the next iteration, I push the result of the current balance check (=YES= or =NO=) into an output array that will eventually be transformed into a string of lines as the return value of the solution.
+
+#+BEGIN_SRC js :exports both
+function challenge_solution(lines) {
+    var open = [];
+    var close = [];
+    var char;
+    var output = [];
+    var t = parseInt(lines[0]);
+    lines.shift();
+    open["("] = ")";
+    open["["] = "]";
+    open["{"] = "}";
+    close["}"] = "{";
+    close["]"] = "[";
+    close[")"] = "(";
+    for(var a0 = 0; a0 < t; a0++){
+        var expression = lines[a0];
+        var stack = [];
+        var ok = true;
+        for (var i=0; i<expression.length; i++){
+            char = expression[i];
+            if (open[char]) {
+                stack.push(char);
+            }
+            if (close[char] && (close[char] != stack.pop())) {
+               ok = false;
+               break;
+            }
+        }
+        if (ok && (stack.length==0)) {
+            output.push("YES");
+        } else {
+            output.push("NO");
+        }
+    }
+    return output.join("\n")
+}
+
+
+// Run all testcases
+var folder = "./testcases/stacks-balanced-brackets";
+var tc = require("/app/testcase.js");
+return tc.results(
+    tc.suite(
+        tc.list(folder), challenge_solution
+    )
+);
+#+END_SRC
+
+#+RESULTS:
+| Test case | Success | Runtime |
+| #0        | true    | 0 msec  |
+| #1        | true    | 0 msec  |
+| #2        | true    | 0 msec  |
+| #3        | true    | 0 msec  |
+| #4        | true    | 0 msec  |
+| #5        | true    | 0 msec  |
+| #6        | true    | 10 msec |
+| #7        | true    | 7 msec  |
+| #8        | true    | 2 msec  |
+| #9        | true    | 9 msec  |
+| #10       | true    | 22 msec |
+| #11       | true    | 23 msec |
+| #12       | true    | 25 msec |
+| #13       | true    | 20 msec |
+| #14       | true    | 25 msec |
+| #15       | true    | 20 msec |
+| #16       | true    | 27 msec |
+| #17       | true    | 23 msec |
+| #18       | true    | 0 msec  |
+
