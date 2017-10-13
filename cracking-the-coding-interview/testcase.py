@@ -12,10 +12,10 @@ def merge(d1, d2):
 
 
 def filenames(prefix, folder):
+    ''' Return a list of the files that start with a prefix in a folder '''
     return [
         {prefix: os.path.join(folder, file)}
-        for file in os.listdir(folder)
-        if file.startswith(prefix)
+        for file in os.listdir(folder) if file.startswith(prefix)
     ]
 
 

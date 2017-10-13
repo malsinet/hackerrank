@@ -14,6 +14,7 @@ var tc = {
         });
         return testcases;
     },
+
     run: function(testcase, runFn){
         var input = fs.readFileSync(testcase.input, "utf8");
         var begin = Date.now();
@@ -27,6 +28,7 @@ var tc = {
             expected: expected
         }
     },
+
     suite: function(testcases, fn){
         var that = this;
         return testcases.map(
@@ -39,6 +41,7 @@ var tc = {
                 };
             });
     },
+
     results: function(tests){
         var titles = ["Test case", "Success", "Runtime"];
         var results = tests.map(

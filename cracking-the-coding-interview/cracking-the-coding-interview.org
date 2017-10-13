@@ -2,7 +2,7 @@
 #+TITLE: Hacker Rank: Cracking the Coding Interview
 #+AUTHOR: Martín Alsinet
 #+DATE: 2017
-#+OPTIONS: toc:nil ':t num:nil
+#+OPTIONS: toc:t ':t num:nil
 #+LANGUAGE: en
 #+LaTeX_HEADER: \usemintedstyle{default}
 #+LaTeX_HEADER: \usepackage{xcolor}
@@ -39,9 +39,9 @@ Initially I will use Javascript and Python, writing solutions for each challenge
 
 We need a test case runner that can read each input file, run the test case using my proposed solution, and compare the output of the execution of that test case to the corresponding output file. If both outputs are equal, the function passes the test case. It would also be nice to be able to measure the time taken for each test case run and its resource usage.
 
-*** TODO Modify to tar.gzip test cases
+*** TODO Modify to allow tgz test cases
 
-The test cases for just the first exercise require 2.5 MB. There are 20 challenges in total, so the entire set of test cases for all challenges will require at least 50 MB. It could be useful to compress all those text files and decompress them on demand when we are running a test case.
+The test cases for just the first exercise require 2.5 MB. There are 20 challenges in total, so the entire set of test cases for all challenges will require at least 50 MB. It would be useful to compress all those text files and decompress them on demand when we are running a test case.
 
 ** Javascript test case runner
 
@@ -52,7 +52,7 @@ The following source code block will be referenced from all Javascript solutions
 - suite :: Execute the complete test case suite
 - results :: Return a summary array with the results of a test suite run
 
-** Testcase Module
+*** Testcase Module
 
 #+BEGIN_SRC js :tangle testcase.js
 var fs = require('fs');
@@ -71,6 +71,7 @@ var tc = {
         });
         return testcases;
     },
+
     run: function(testcase, runFn){
         var input = fs.readFileSync(testcase.input, "utf8");
         var begin = Date.now();
@@ -84,6 +85,7 @@ var tc = {
             expected: expected
         }
     },
+
     suite: function(testcases, fn){
         var that = this;
         return testcases.map(
@@ -96,6 +98,7 @@ var tc = {
                 };
             });
     },
+
     results: function(tests){
         var titles = ["Test case", "Success", "Runtime"];
         var results = tests.map(
@@ -133,10 +136,10 @@ def merge(d1, d2):
 
 
 def filenames(prefix, folder):
+    ''' Return a list of the files that start with a prefix in a folder '''
     return [
         {prefix: os.path.join(folder, file)}
-        for file in os.listdir(folder)
-        if file.startswith(prefix)
+        for file in os.listdir(folder) if file.startswith(prefix)
     ]
 
 
@@ -233,9 +236,11 @@ Thus, we print the array's final state as a single line of space-separated value
 
 *** Javascript Solutions
 
+**** Naive solution
+
 My first approach to the solution uses a temporary array (=ret=) to store the array to be returned. Since I have to perform *k* left rotations, that means that the first element of the result array will be in the *k* position in the source array. So, we start in the *k* position and push all remaining elements into the result array (from index *k* until *n-1*). Then, we append the elements starting from the beginning of the source array until reaching the *k-1* position so that we have all elements in the result array (from index *0* until *k-1*).
 
-**** Naive solution
+*Implementation* \\ 
 
 #+NAME: Naive solution
 #+BEGIN_SRC js :exports both
@@ -283,9 +288,11 @@ return tc.results(
 | #8        | true    | 14 msec |
 | #9        | true    | 23 msec |
 
+**** Compact Solution
+
 Actually, I implemented this solution /after/ figuring out the Python solution. When working in Python there is a pythonic and an unpythonic way to write code. Python programmers generally favor list comprehension operations over looping through arrays, so the use of for loops is discouraged. Javascript also has quite powerful array functions, so the compact solution is also a one-liner, but comparing the two versions it is clear that the Python version is easier to read and to understand.
 
-**** Compact Solution*
+*Implementation* \\ 
 
 #+NAME: Compact Solution
 #+BEGIN_SRC js :exports both
