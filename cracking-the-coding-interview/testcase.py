@@ -2,6 +2,7 @@ import os
 from timeit import default_timer as timer
 from math import ceil
 
+
 def merge(d1, d2):
     ''' Merge two dictionaries. '''
     merged = {}
@@ -9,22 +10,27 @@ def merge(d1, d2):
     merged.update(d2)
     return merged
 
+
 def filenames(prefix, folder):
-    return [{prefix: os.path.join(folder, file)} 
-        for file in os.listdir(folder) 
-            if file.startswith(prefix)]
+    return [
+        {prefix: os.path.join(folder, file)}
+        for file in os.listdir(folder)
+        if file.startswith(prefix)
+    ]
+
 
 def elapsed_str(end, start):
-    return str(int(round((end-start)*1000)))+" msec"
+    return str(int(round((end-start)*1000))) + " msec"
+
 
 class TestCase:
     def __init__(self, folder):
         self.folder = folder
 
     def list(self):
-        inputs  = filenames("input", self.folder)
+        inputs = filenames("input", self.folder)
         outputs = filenames("output", self.folder)
-        return [merge(i,o) for i,o in list(zip(inputs, outputs))]
+        return [merge(i, o) for i, o in list(zip(inputs, outputs))]
 
     def run(self, testcase, fn):
         with open(testcase["input"]) as inf, open(testcase["output"]) as outf:
@@ -45,7 +51,10 @@ class TestCase:
 
     def results(self, tests):
         titles = [["Test case", "Success", "Runtime"]]
-        results = [["#%s" % i, t["success"], t["runtime"]] for i, t in enumerate(tests)]
+        results = [
+            ["#%s" % i, t["success"], t["runtime"]]
+            for i, t in enumerate(tests)
+        ]
         return titles + results
 
     def fields(self, item):
