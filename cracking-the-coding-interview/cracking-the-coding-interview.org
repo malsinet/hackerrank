@@ -35,7 +35,7 @@ Initially I will use Javascript and Python, writing solutions for each challenge
 ** Python Setup
 * Test Cases
 
-Each challenge comes with a set of test cases that must be successfully run in order to verify that the proposed solution for the challenge is correct. These test cases consist in a set of files with input data and its expected output when processed by a correct solution. They are simple .txt files which I have downloaded into the =./testcases/= folder. Their filename format is =inputXX.txt= and =outputXX.txt=, where the =XX= is the test case number.
+  Each challenge comes with a set of test cases that must be successfully run in order to verify that the proposed solution for the challenge is correct. These test cases are a set of files with input data and its expected output when processed by a correct solution. They are simple .txt files which I have downloaded into the =./testcases/= folder. Their filename format is =inputXX.txt= and =outputXX.txt=, where the =XX= is the test case number.
 
 We need a test case runner that can read each input file, run the test case using my proposed solution, and compare the output of the execution of that test case to the corresponding output file. If both outputs are equal, the function passes the test case. It would also be nice to be able to measure the time taken for each test case run and its resource usage.
 
@@ -52,8 +52,7 @@ The following source code block will be referenced from all Javascript solutions
 - suite :: Execute the complete test case suite
 - results :: Return a summary array with the results of a test suite run
 
-#+NAME: js-testcase
-#+BEGIN_SRC js
+#+BEGIN_SRC js :tangle testcase.js
 var fs = require('fs');
 var path = require('path');
 
@@ -89,7 +88,7 @@ var tc = {
             function(testcase, i) {
                 var tc = that.run(testcase, fn);
                 return {
-                    testcase: i+1,
+                    testcase: "#" + i,
                      success: tc.success,
                      runtime: tc.runtime
                 };
@@ -106,14 +105,15 @@ var tc = {
         return results;
     }
 }
+
+module.exports = tc
 #+END_SRC
 
 ** Python test case runner
 
 In this case, I am going to replicate much of the logic I already did in Javascript for the Python version of the test case runner.
 
-#+NAME: py-testcase
-#+BEGIN_SRC python
+#+BEGIN_SRC python :tangle testcase.py
 
 import os
 from timeit import default_timer as timer
@@ -162,7 +162,7 @@ class TestCase:
 
     def results(self, tests):
         titles = [["Test case", "Success", "Runtime"]]
-        results = [[i+1, t["success"], t["runtime"]] for i, t in enumerate(tests)]
+        results = [["#%s" % i, t["success"], t["runtime"]] for i, t in enumerate(tests)]
         return titles + results
 
     def fields(self, item):
@@ -172,9 +172,6 @@ class TestCase:
         }
 
 #+END_SRC
-
-#+RESULTS: py-testcase
-: None
 
 * Data Structures
 ** Arrays: Left Rotation
@@ -221,16 +218,15 @@ When we perform ~d = 4~ left rotations, the array undergoes the following sequen
 
 Thus, we print the array's final state as a single line of space-separated values, which is =5 1 2 3 4=.
 
-*** Solutions
-**** Javascript
+*** Javascript Solutions
 
 *Naive solution*
 
 My first approach to the solution uses a temporary array (=ret=) to store the array to be returned. Since I have to perform *k* left rotations, that means that the first element of the result array will be in the *k* position in the source array. So, we start in the *k* position and push all remaining elements into the result array (from index *k* until *n-1*). Then, we append the elements starting from the beginning of the source array until reaching the *k-1* position so that we have all elements in the result array (from index *0* until *k-1*).
 
 #+NAME: Naive solution
-#+BEGIN_SRC js  :noweb yes
-<<js-testcase>>
+#+BEGIN_SRC js :exports both
+var tc = require("/app/testcase.js");
 
 function challenge_solution(lines) {
     var n_temp = lines[0].split(' ');
@@ -256,18 +252,28 @@ return tc.results(
         tc.list(folder), challenge_solution
     )
 );
-
 #+END_SRC
 
 #+RESULTS: Naive solution
+| Test case | Success | Runtime |
+| #0        | true    | 1 msec  |
+| #1        | true    | 1 msec  |
+| #2        | true    | 0 msec  |
+| #3        | true    | 0 msec  |
+| #4        | true    | 0 msec  |
+| #5        | true    | 2 msec  |
+| #6        | true    | 3 msec  |
+| #7        | true    | 2 msec  |
+| #8        | true    | 14 msec |
+| #9        | true    | 23 msec |
 
 *Compact Solution*
 
-Actually, I implemented this solution /after/ figuring out the Python solution. When working in Python there is a pythonic and an unpythonic way to solve a problem. Python programmers generally favor list comprehension operations over looping through arrays, so the use of for loops is discouraged. Javascript also has quite powerful array functions, so the compact solution is also a one-liner, but comparing the two versions it is clear that the result is not as easy to read as its Python alternative.
+Actually, I implemented this solution /after/ figuring out the Python solution. When working in Python there is a pythonic and an unpythonic way to write code. Python programmers generally favor list comprehension operations over looping through arrays, so the use of for loops is discouraged. Javascript also has quite powerful array functions, so the compact solution is also a one-liner, but comparing the two versions it is clear that the Python version is easier to read and to understand.
 
-#+NAME: Compact solution
-#+BEGIN_SRC js :result raw :noweb yes
-<<js-testcase>> 
+#+NAME: Compact Solution
+#+BEGIN_SRC js :exports both
+var tc = require("/app/testcase.js");
 
 function challenge_solution(lines) {
     var n_temp = lines[0].split(' ');
@@ -291,23 +297,23 @@ return tc.results(
 
 #+RESULTS: Compact solution
 | Test case | Success | Runtime |
-|         1 | true    | 0 msec  |
-|         2 | true    | 0 msec  |
-|         3 | true    | 0 msec  |
-|         4 | true    | 0 msec  |
-|         5 | true    | 0 msec  |
-|         6 | true    | 1 msec  |
-|         7 | true    | 1 msec  |
-|         8 | true    | 2 msec  |
-|         9 | true    | 13 msec |
-|        10 | true    | 22 msec |
+| #0        | true    | 0 msec  |
+| #1        | true    | 0 msec  |
+| #2        | true    | 0 msec  |
+| #3        | true    | 0 msec  |
+| #4        | true    | 0 msec  |
+| #5        | true    | 2 msec  |
+| #6        | true    | 1 msec  |
+| #7        | true    | 2 msec  |
+| #8        | true    | 13 msec |
+| #9        | true    | 20 msec |
 
-**** Python
+*** Python Solution
 
-Python list comprehension operators are extremely powerful, so this solution is just a one-liner. The underlying approach is the same, merging two sublists from the original array, the first from the /*k*/ element until the last (/*n-1*/) element, and the second from the first element until the /*(k-1)*/ element. Notice how cleanly the code follows the algorithm.
+Python list comprehension operators are extremely powerful, so this solution is just a one-liner. The underlying approach is the same, merging two sublists from the original array, the first from the /*k*/ element until the last (/*n-1*/) element, and the second from the first element until the /*(k-1)*/ element. Notice in the =left_rotate= function how cleanly the code follows the algorithm.
 
-#+BEGIN_SRC python :noweb yes
-<<py-testcase>>
+#+BEGIN_SRC python :exports both
+from testcase import TestCase
 
 tc = TestCase("./testcases/arrays-left-rotation");
 
@@ -324,16 +330,16 @@ return tc.results(tc.suite(tc.list(), challenge_solution))
 
 #+RESULTS:
 | Test case | Success | Runtime |
-|         1 | True    | 0 msec  |
-|         2 | True    | 0 msec  |
-|         3 | True    | 0 msec  |
-|         4 | True    | 0 msec  |
-|         5 | True    | 0 msec  |
-|         6 | True    | 6 msec  |
-|         7 | True    | 7 msec  |
-|         8 | True    | 1 msec  |
-|         9 | True    | 58 msec |
-|        10 | True    | 68 msec |
+| #0        | True    | 0 msec  |
+| #1        | True    | 0 msec  |
+| #2        | True    | 0 msec  |
+| #3        | True    | 0 msec  |
+| #4        | True    | 0 msec  |
+| #5        | True    | 6 msec  |
+| #6        | True    | 7 msec  |
+| #7        | True    | 1 msec  |
+| #8        | True    | 56 msec |
+| #9        | True    | 71 msec |
 
 ** Stacks: Balanced Brackets
 *** Problem Definition
