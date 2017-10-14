@@ -29,6 +29,12 @@ var tc = {
         }
     },
 
+    view: function(testcase){
+        var input = fs.readFileSync(testcase.input, "utf8");
+        var expected = fs.readFileSync(testcase.output, "utf8");
+        return ["Input:", input, "", "Expected output:", expected].join("\n");
+    },
+
     suite: function(testcases, fn){
         var that = this;
         return testcases.map(

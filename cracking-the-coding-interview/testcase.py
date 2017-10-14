@@ -46,6 +46,15 @@ class TestCase:
                 "expected": expected_text
             }
 
+    def view(self, testcase):
+        with open(testcase["input"]) as inf, open(testcase["output"]) as outf:
+            input_text = inf.read()
+            expected_text = outf.read()
+            return "\n".join([
+                "Input:", input_text, "", "Expected output:", expected_text
+            ])
+
+
     def suite(self, testcases, fn):
         return [self.fields(self.run(test, fn)) for test in testcases]
 

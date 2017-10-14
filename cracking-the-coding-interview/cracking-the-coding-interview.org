@@ -86,6 +86,12 @@ var tc = {
         }
     },
 
+    view: function(testcase){
+        var input = fs.readFileSync(testcase.input, "utf8");
+        var expected = fs.readFileSync(testcase.output, "utf8");
+        return ["Input:", input, "", "Expected output:", expected].join("\n");
+    },
+
     suite: function(testcases, fn){
         var that = this;
         return testcases.map(
@@ -170,6 +176,15 @@ class TestCase:
                 "expected": expected_text
             }
 
+    def view(self, testcase):
+        with open(testcase["input"]) as inf, open(testcase["output"]) as outf:
+            input_text = inf.read()
+            expected_text = outf.read()
+            return "\n".join([
+                "Input:", input_text, "", "Expected output:", expected_text
+            ])
+
+
     def suite(self, testcases, fn):
         return [self.fields(self.run(test, fn)) for test in testcases]
 
@@ -235,7 +250,6 @@ When we perform ~d = 4~ left rotations, the array undergoes the following sequen
 Thus, we print the array's final state as a single line of space-separated values, which is =5 1 2 3 4=.
 
 *** Javascript Solutions
-
 **** Naive solution
 
 My first approach to the solution uses a temporary array (=ret=) to store the array to be returned. Since I have to perform *k* left rotations, that means that the first element of the result array will be in the *k* position in the source array. So, we start in the *k* position and push all remaining elements into the result array (from index *k* until *n-1*). Then, we append the elements starting from the beginning of the source array until reaching the *k-1* position so that we have all elements in the result array (from index *0* until *k-1*).
@@ -363,11 +377,11 @@ return tc.results(tc.suite(tc.list(), challenge_solution))
 | #2        | True    | 0 msec  |
 | #3        | True    | 0 msec  |
 | #4        | True    | 0 msec  |
-| #5        | True    | 6 msec  |
+| #5        | True    | 7 msec  |
 | #6        | True    | 7 msec  |
-| #7        | True    | 1 msec  |
-| #8        | True    | 56 msec |
-| #9        | True    | 71 msec |
+| #7        | True    | 2 msec  |
+| #8        | True    | 59 msec |
+| #9        | True    | 77 msec |
 
 ** Stacks: Balanced Brackets
 *** Problem Definition
@@ -424,43 +438,46 @@ The string ={[(])}= is not balanced, because the brackets enclosed by the matche
 The string ={{[[(())]]}}= meets both criteria for being a balanced string, so we print =YES= on a new line.
 
 *** Javascript Solution
+**** Stack based solution
 
-In this case I am using two hashes (=open= and =close=) to build a table of the corresponding opening and closing characters. Then I enter a for loop to process the /t/ lines one at a time of the input expression array. For each expression, I enter on an inner loop to check each character and, if it is an opening character (it exists in the =open= hash), I push it into a =stack= array. If the character is a closing character I compare it to element on the top the stack. If the closing character does not match the element in the top of the stack, then the brackets are not balanced, and I break out of the inner loop in order to go on to the next expression. After the inner loop, but before starting the next iteration, I push the result of the current balance check (=YES= or =NO=) into an output array that will eventually be transformed into a string of lines as the return value of the solution.
+In this case I am using two hashes (=open= and =close=) to build a table of the corresponding opening and closing characters. Then I process the /t/ lines of the input expression array one at a time. For each expression, I check each character and, if it is an opening character (it exists in the =open= hash), I push it into a =stack= array. If the character is a closing character, I compare it to element on the top the stack. If the closing character does not match the element in the top of the stack, then the brackets are not balanced, then I break out of the loop with the =balanced= flag set to false. After all characters have been processed, if the expression is balanced then the stack should be empty (all opening brackets were pushed then popped of the stack when the closing bracket was found). If the stack is empty and there were not unmatched brackets, then the function returns =YES=, otherwise it returns =NO=.
 
 #+BEGIN_SRC js :exports both
-function challenge_solution(lines) {
+function check_expression(exp){
     var open = [];
-    var close = [];
-    var char;
-    var output = [];
-    var t = parseInt(lines[0]);
-    lines.shift();
     open["("] = ")";
     open["["] = "]";
     open["{"] = "}";
+    var close = [];
     close["}"] = "{";
     close["]"] = "[";
     close[")"] = "(";
-    for(var a0 = 0; a0 < t; a0++){
-        var expression = lines[a0];
-        var stack = [];
-        var ok = true;
-        for (var i=0; i<expression.length; i++){
-            char = expression[i];
-            if (open[char]) {
-                stack.push(char);
-            }
-            if (close[char] && (close[char] != stack.pop())) {
-               ok = false;
-               break;
-            }
+    var stack = [];
+    var char;
+    var balanced = true;
+    for (var i=0; i<exp.length; i++){
+        char = exp[i];
+        if (open[char]) {
+            stack.push(char);
         }
-        if (ok && (stack.length==0)) {
-            output.push("YES");
-        } else {
-            output.push("NO");
+        if (close[char] && (close[char] != stack.pop())) {
+            balanced = false;
+            break;
         }
     }
+    if (balanced && (stack.length==0)) {
+        return "YES";
+    } else {
+        return "NO";
+    }
+}
+
+
+function challenge_solution(lines) {
+    var output = [];
+    var t = parseInt(lines[0]);
+    lines.shift();
+    output = lines.map(exp => check_expression(exp));
     return output.join("\n")
 }
 
@@ -481,19 +498,19 @@ return tc.results(
 | #1        | true    | 0 msec  |
 | #2        | true    | 0 msec  |
 | #3        | true    | 0 msec  |
-| #4        | true    | 0 msec  |
+| #4        | true    | 1 msec  |
 | #5        | true    | 0 msec  |
 | #6        | true    | 10 msec |
-| #7        | true    | 7 msec  |
+| #7        | true    | 5 msec  |
 | #8        | true    | 2 msec  |
-| #9        | true    | 9 msec  |
-| #10       | true    | 22 msec |
-| #11       | true    | 23 msec |
-| #12       | true    | 25 msec |
-| #13       | true    | 20 msec |
+| #9        | true    | 7 msec  |
+| #10       | true    | 23 msec |
+| #11       | true    | 20 msec |
+| #12       | true    | 22 msec |
+| #13       | true    | 22 msec |
 | #14       | true    | 25 msec |
-| #15       | true    | 20 msec |
-| #16       | true    | 27 msec |
-| #17       | true    | 23 msec |
+| #15       | true    | 22 msec |
+| #16       | true    | 21 msec |
+| #17       | true    | 21 msec |
 | #18       | true    | 0 msec  |
 
